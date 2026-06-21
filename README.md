@@ -2,6 +2,8 @@
 
 Give your coding agent the live web. Scout's MCP server adds web search, scraping to Markdown, structured extraction, crawling, screenshots, and company lookup as tools any MCP client can call: Claude Code, Codex, Gemini CLI, Antigravity, Cursor, Windsurf, and Claude Desktop.
 
+It has **zero dependencies** — the MCP protocol is implemented in a few hundred lines of plain JavaScript, with no build step and nothing pulled from npm at install time. When you run it, the only code that runs is the code in this repo. See [SECURITY.md](./SECURITY.md).
+
 ## Tools
 
 | Tool | What it does |
@@ -116,6 +118,27 @@ Once connected, ask your agent things like:
 
 The agent picks the right Scout tool and calls it.
 
+## Progress on long jobs
+
+`scout_search` with `depth: "deep"` runs an agentic multi-step search server-side. The server streams Scout's run events and forwards them as MCP progress notifications, so clients that show progress (Claude Code, Cursor) display live updates instead of a frozen spinner. The final results come back when the run finishes.
+
+## Hosted HTTP/SSE transport
+
+Besides stdio, the server can run over HTTP using MCP's Streamable HTTP transport, so a remote client can connect by URL:
+
+```sh
+SCOUT_API_KEY=sk_your_key npx -y -p @scout-ai/mcp scout-mcp-http
+# listening on :3000/mcp
+```
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `PORT` | `3000` | Listen port. |
+| `SCOUT_MCP_PATH` | `/mcp` | Endpoint path. |
+| `SCOUT_MCP_TOKEN` | (none) | If set, clients must send `Authorization: Bearer <token>`. |
+
+Point an MCP client at `http://your-host:3000/mcp`. There's a `/health` endpoint for load balancers. Each request is stateless (a fresh server per request), which keeps it simple to run behind any HTTP front end.
+
 ## Configuration
 
 | Variable | Default | Purpose |
@@ -125,10 +148,12 @@ The agent picks the right Scout tool and calls it.
 
 ## Run from source
 
+No install, no build (zero dependencies):
+
 ```sh
-yarn install
-yarn build
-SCOUT_API_KEY=sk_your_key node dist/index.js
+SCOUT_API_KEY=sk_your_key node bin/scout-mcp.js        # stdio
+SCOUT_API_KEY=sk_your_key node bin/scout-mcp-http.js   # hosted HTTP/SSE
+node test/smoke.mjs                                    # run the protocol test
 ```
 
 ## License

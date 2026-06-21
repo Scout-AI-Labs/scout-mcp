@@ -9,16 +9,13 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write   # OIDC: lets npm trusted publishing mint a short-lived credential
+      id-token: write   # OIDC trusted publishing + provenance
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           registry-url: "https://registry.npmjs.org"
-      - name: Upgrade npm (OIDC trusted publishing needs npm >= 11.5.1)
-        run: npm install -g npm@latest
-      - run: npm install
-      - run: npm run build
-      - name: Publish (no token; authenticates via GitHub OIDC)
-        run: npm publish --access public
+      - run: npm install -g npm@latest
+      - run: node test/smoke.mjs
+      - run: npm publish --access public --provenance
