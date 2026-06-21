@@ -67,7 +67,16 @@ async function run(fn: () => Promise<unknown>): Promise<ToolResult> {
 
 const server = new McpServer({ name: 'scout-mcp', version: VERSION });
 
-server.registerTool(
+// Thin wrapper over registerTool. The SDK's generic inference over the zod
+// input shape can blow TypeScript's instantiation depth (TS2589) once several
+// tools are registered; a concrete signature sidesteps it. Runtime is identical.
+const register = server.registerTool.bind(server) as unknown as (
+  name: string,
+  config: { title?: string; description: string; inputSchema: Record<string, z.ZodTypeAny> },
+  handler: (args: any) => Promise<ToolResult>,
+) => void;
+
+register(
   'scout_search',
   {
     title: 'Scout Web Search',
